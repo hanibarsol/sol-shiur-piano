@@ -134,7 +134,7 @@
     </div>
     <div id="speed-bar">
         <button id="speed-minus" class="speed-step-btn">－</button>
-        <button id="speed-reset" class="is-normal">רגיל</button>
+        <button id="speed-reset" class="is-normal">מהירות</button>
         <button id="speed-plus" class="speed-step-btn">＋</button>
     </div>
     <div id="piano-container">
@@ -152,6 +152,7 @@
 
     startScreen.addEventListener('click', async () => {
         await Tone.start();
+        await reverb.ready;
         startScreen.style.display = 'none';
         console.log("Audio Context started");
 
@@ -177,7 +178,7 @@
             videoFrame.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'setPlaybackRate', args: [rate] }), '*');
         } catch (e) {}
         const isNormal = rate === 1;
-        speedResetBtn.textContent = isNormal ? 'רגיל' : `×${rate}`;
+        speedResetBtn.textContent = isNormal ? 'מהירות' : `×${rate}`;
         speedResetBtn.classList.toggle('is-normal', isNormal);
     }
 
@@ -213,17 +214,21 @@
         });
     });
 
+    // A subtle reverb gives the notes a gentle "sustain pedal" quality —
+    // like they keep resonating in the room rather than stopping dead.
+    const reverb = new Tone.Reverb({ decay: 2.5, wet: 0.22 }).toDestination();
+
     const sampler = new Tone.Sampler({
         urls: sampleUrls,
         baseUrl: "./",
         // A real piano note keeps ringing for a while after the key is released.
         // The default release (~0.1s) cut notes off almost the instant a child
-        // lifted their finger, especially on quick taps. 1.5s lets it fade out naturally.
+        // lifted their finger, especially on quick taps. 2.2s lets it fade out naturally.
         attack: 0.005,
-        release: 1.5,
+        release: 2.2,
         onload: () => console.log("Sounds loaded!"),
         onerror: (e) => console.log("Error loading sound", e)
-    }).toDestination();
+    }).connect(reverb);
 
     let whiteKeyIndex = 0;
 
