@@ -24,11 +24,34 @@
 
         #start-screen { position: fixed; inset: 0; background: rgba(0,0,0,0.85); color: white; display: flex; justify-content: center; align-items: center; z-index: 100; cursor: pointer; font-size: 22px; text-align: center; padding: 20px; box-sizing: border-box; }
 
-        #video-wrap { flex: 0 0 55%; min-height: 0; background: #000; touch-action: auto; }
+        #video-wrap { flex: 1 1 auto; min-height: 0; background: #000; touch-action: auto; }
         #video-wrap iframe { width: 100%; height: 100%; border: 0; touch-action: auto; }
 
+        #speed-bar {
+            flex: 0 0 auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 0;
+            background: #1a1a1a;
+            touch-action: auto;
+        }
+        .speed-btn {
+            touch-action: auto;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 22px;
+            font-size: 16px;
+            font-family: Arial, sans-serif;
+            background: #333;
+            color: #fff;
+            cursor: pointer;
+        }
+        .speed-btn.active { background: #ffeb3b; color: #000; font-weight: bold; }
+
         #piano-container {
-            flex: 0 0 45%;
+            flex: 0 0 42vh;
             display: flex;
             justify-content: center;
             align-items: flex-start;
@@ -95,6 +118,10 @@
             allow="autoplay; encrypted-media"
             allowfullscreen></iframe>
     </div>
+    <div id="speed-bar">
+        <button class="speed-btn" data-rate="0.5">אטי</button>
+        <button class="speed-btn active" data-rate="1">רגיל</button>
+    </div>
     <div id="piano-container">
         <div class="piano" id="piano"></div>
     </div>
@@ -118,6 +145,18 @@
         try {
             videoFrame.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: [] }), '*');
         } catch (e) {}
+    });
+
+    const speedButtons = document.querySelectorAll('.speed-btn');
+    speedButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const rate = parseFloat(btn.dataset.rate);
+            try {
+                videoFrame.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'setPlaybackRate', args: [rate] }), '*');
+            } catch (e) {}
+            speedButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        });
     });
 
     const characterImages = ["דו.png", "רה.png", "מי.png", "פה.png", "סול.png", "לה.png", "סי.png", "דו.png", "רה.png", "מי.png", "פה.png", "סול.png", "לה.png", "סי.png"];
