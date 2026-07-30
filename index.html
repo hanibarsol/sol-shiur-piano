@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+    <title>המשפחה של סול - שיעור + פסנתר</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        :root { --white-w: 50px; --black-w: 33px; }
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #111;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none !important;
+            -webkit-touch-callout: none;
+            font-family: Arial, sans-serif;
+        }
+        #app { display: flex; flex-direction: column; width: 100%; height: 100%; }
+
+        #start-screen { position: fixed; inset: 0; background: rgba(0,0,0,0.85); color: white; display: flex; justify-content: center; align-items: center; z-index: 100; cursor: pointer; font-size: 22px; text-align: center; padding: 20px; box-sizing: border-box; }
+
+        #video-wrap { flex: 0 0 55%; min-height: 0; background: #000; touch-action: auto; }
+        #video-wrap iframe { width: 100%; height: 100%; border: 0; touch-action: auto; }
+
+        #piano-container {
+            flex: 0 0 45%;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            width: 100%;
+            padding-top: 1vh;
+            box-sizing: border-box;
+            touch-action: none !important;
+        }
+        .piano {
+            display: flex;
+            position: relative;
+            direction: ltr;
+            height: 100%;
+            touch-action: none !important;
+        }
+
+        .key {
+            position: relative;
+            border: 1px solid #000;
+            box-sizing: border-box;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            padding-bottom: 6px;
+            z-index: 10;
+            touch-action: none !important;
+            -webkit-touch-callout: none;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .white-key { width: var(--white-w); height: 100%; background-color: white; border-radius: 0 0 5px 5px; }
+
+        .black-key {
+            width: var(--black-w);
+            height: 60%;
+            background-color: #333;
+            z-index: 30;
+            margin-left: calc(var(--black-w) / -2);
+            margin-right: calc(var(--black-w) / -2);
+            border-radius: 0 0 3px 3px;
+        }
+
+        .key.active { background-color: #ffeb3b !important; }
+
+        .character-img {
+            width: 80%;
+            margin-bottom: 4px;
+            pointer-events: none;
+            -webkit-touch-callout: none;
+            user-select: none;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <div id="video-wrap">
+        <iframe id="lesson-video"
+            src="https://www.youtube.com/embed/uMXlQ2kMQws?enablejsapi=1&playsinline=1&rel=0"
+            allow="autoplay; encrypted-media"
+            allowfullscreen></iframe>
+    </div>
+    <div id="piano-container">
+        <div class="piano" id="piano"></div>
+    </div>
+</div>
+
+<div id="start-screen">לחצי כאן כדי להתחיל את השיעור והפסנתר</div>
+
+<script>
+    const startScreen = document.getElementById('start-screen');
+    const pianoElement = document.getElementById('piano');
+    const pianoContainer = document.getElementById('piano-container');
+    const videoFrame = document.getElementById('lesson-video');
+
+    startScreen.addEventListener('click', async () => {
+        await Tone.start();
+        startScreen.style.display = 'none';
+        console.log("Audio Context started");
+
+        // Ask the (already-loaded) YouTube iframe to start playing, inside the same
+        // click handler, so the browser attributes the user gesture to the video too.
+        try {
+            videoFrame.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: [] }), '*');
+        } catch (e) {}
+    });
+
+    const characterImages = ["דו.png", "רה.png", "מי.png", "פה.png", "סול.png", "לה.png", "סי.png", "דו.png", "רה.png", "מי.png", "פה.png", "סול.png", "לה.png", "סי.png"];
+
+    // Map every note to its real recorded sample (24 files exist in sounds/,
+    // the previous version only wired up 4 of them and let Tone.js pitch-shift the rest).
+    const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const octaves = [3, 4];
+
+    function noteToFile(note, octave) {
+        const letter = note[0].toLowerCase();
+        const sharp = note.includes('#') ? 'd' : '';
+        return `sounds/${letter}${sharp}${octave}.wav`;
+    }
+
+    const sampleUrls = {};
+    octaves.forEach(octave => {
+        notes.forEach(note => {
+            sampleUrls[note + octave] = noteToFile(note, octave);
+        });
+    });
+
+    const sampler = new Tone.Sampler({
+        urls: sampleUrls,
+        baseUrl: "./",
+        onload: () => console.log("Sounds loaded!"),
+        onerror: (e) => console.log("Error loading sound", e)
+    }).toDestination();
+
+    let whiteKeyIndex = 0;
+
+    octaves.forEach(octave => {
+        notes.forEach(note => {
+            const isBlack = note.includes('#');
+            const fullNote = note + octave;
+            const key = document.createElement('div');
+            key.className = `key ${isBlack ? 'black-key' : 'white-key'}`;
+            key.dataset.note = fullNote;
+            key.dataset.isPlaying = "false";
+
+            if (!isBlack) {
+                const img = document.createElement('img');
+                img.src = characterImages[whiteKeyIndex] || "";
+                img.className = 'character-img';
+                key.appendChild(img);
+                whiteKeyIndex++;
+            }
+
+            const playNote = () => {
+                if (key.dataset.isPlaying === "true") return;
+                key.dataset.isPlaying = "true";
+                key.classList.add('active');
+                try { sampler.triggerAttack(fullNote); } catch (err) {}
+            };
+
+            const stopNote = () => {
+                if (key.dataset.isPlaying === "false") return;
+                key.dataset.isPlaying = "false";
+                key.classList.remove('active');
+                try { sampler.triggerRelease(fullNote); } catch (err) {}
+            };
+
+            let isTouchActive = false;
+
+            key.addEventListener('pointerdown', () => {
+                if (isTouchActive) return;
+                isTouchActive = true;
+                playNote();
+            });
+            key.addEventListener('pointermove', (e) => e.preventDefault());
+            key.addEventListener('pointerup', () => { isTouchActive = false; stopNote(); });
+            key.addEventListener('pointerleave', () => { isTouchActive = false; stopNote(); });
+            key.addEventListener('pointercancel', () => { isTouchActive = false; stopNote(); });
+
+            pianoElement.appendChild(key);
+        });
+    });
+
+    // Responsive key sizing: always fit 2 octaves (14 white keys) to the
+    // container's actual width, so nothing overflows on a phone screen.
+    function sizeKeys() {
+        const totalWhiteKeys = 14;
+        const containerWidth = pianoContainer.clientWidth;
+        let whiteW = Math.floor(containerWidth / totalWhiteKeys);
+        whiteW = Math.max(24, Math.min(whiteW, 60));
+        const blackW = Math.round(whiteW * 0.66);
+        document.documentElement.style.setProperty('--white-w', whiteW + 'px');
+        document.documentElement.style.setProperty('--black-w', blackW + 'px');
+    }
+    window.addEventListener('resize', sizeKeys);
+    sizeKeys();
+</script>
+</body>
+</html>
