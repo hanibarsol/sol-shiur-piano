@@ -172,10 +172,18 @@
         return `sounds/${letter}${sharp}${octave}.wav`;
     }
 
+    // sounds/d4.wav and sounds/e4.wav actually contain mislabeled D3/E3 audio
+    // (a leftover export mistake, not something the recording session did wrong).
+    // Skip them so Tone.Sampler falls back to pitch-shifting from the nearest
+    // good sample (the same behavior the original piano already relies on).
+    const knownBadSamples = new Set(['D4', 'E4']);
+
     const sampleUrls = {};
     octaves.forEach(octave => {
         notes.forEach(note => {
-            sampleUrls[note + octave] = noteToFile(note, octave);
+            const fullNote = note + octave;
+            if (knownBadSamples.has(fullNote)) return;
+            sampleUrls[fullNote] = noteToFile(note, octave);
         });
     });
 
