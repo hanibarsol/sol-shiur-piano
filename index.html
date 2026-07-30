@@ -37,18 +37,32 @@
             background: #1a1a1a;
             touch-action: auto;
         }
-        .speed-btn {
+        .speed-step-btn {
             touch-action: auto;
             border: none;
-            border-radius: 8px;
-            padding: 8px 22px;
-            font-size: 16px;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 20px;
             font-family: Arial, sans-serif;
             background: #333;
             color: #fff;
             cursor: pointer;
         }
-        .speed-btn.active { background: #ffeb3b; color: #000; font-weight: bold; }
+        .speed-step-btn:active { background: #555; }
+        #speed-reset {
+            touch-action: auto;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 18px;
+            font-size: 16px;
+            font-family: Arial, sans-serif;
+            background: #333;
+            color: #fff;
+            cursor: pointer;
+            min-width: 90px;
+        }
+        #speed-reset.is-normal { background: #ffeb3b; color: #000; font-weight: bold; }
 
         #piano-container {
             flex: 0 0 42vh;
@@ -119,8 +133,9 @@
             allowfullscreen></iframe>
     </div>
     <div id="speed-bar">
-        <button class="speed-btn" data-rate="0.5">אטי</button>
-        <button class="speed-btn active" data-rate="1">רגיל</button>
+        <button id="speed-minus" class="speed-step-btn">－</button>
+        <button id="speed-reset" class="is-normal">רגיל</button>
+        <button id="speed-plus" class="speed-step-btn">＋</button>
     </div>
     <div id="piano-container">
         <div class="piano" id="piano"></div>
@@ -147,17 +162,28 @@
         } catch (e) {}
     });
 
-    const speedButtons = document.querySelectorAll('.speed-btn');
-    speedButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const rate = parseFloat(btn.dataset.rate);
-            try {
-                videoFrame.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'setPlaybackRate', args: [rate] }), '*');
-            } catch (e) {}
-            speedButtons.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-        });
-    });
+    // Speed stepper: minus/plus move in 0.25 steps between 0.5x-1.5x,
+    // the center button both shows the current speed and resets to normal.
+    const speedSteps = [0.5, 0.75, 1, 1.25, 1.5];
+    let speedIndex = 2; // 1x
+    const speedMinusBtn = document.getElementById('speed-minus');
+    const speedPlusBtn = document.getElementById('speed-plus');
+    const speedResetBtn = document.getElementById('speed-reset');
+
+    function applySpeed(index) {
+        speedIndex = Math.max(0, Math.min(speedSteps.length - 1, index));
+        const rate = speedSteps[speedIndex];
+        try {
+            videoFrame.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'setPlaybackRate', args: [rate] }), '*');
+        } catch (e) {}
+        const isNormal = rate === 1;
+        speedResetBtn.textContent = isNormal ? 'רגיל' : `×${rate}`;
+        speedResetBtn.classList.toggle('is-normal', isNormal);
+    }
+
+    speedMinusBtn.addEventListener('click', () => applySpeed(speedIndex - 1));
+    speedPlusBtn.addEventListener('click', () => applySpeed(speedIndex + 1));
+    speedResetBtn.addEventListener('click', () => applySpeed(2));
 
     const characterImages = ["דו.png", "רה.png", "מי.png", "פה.png", "סול.png", "לה.png", "סי.png", "דו.png", "רה.png", "מי.png", "פה.png", "סול.png", "לה.png", "סי.png"];
 
@@ -190,6 +216,11 @@
     const sampler = new Tone.Sampler({
         urls: sampleUrls,
         baseUrl: "./",
+        // A real piano note keeps ringing for a while after the key is released.
+        // The default release (~0.1s) cut notes off almost the instant a child
+        // lifted their finger, especially on quick taps. 1.5s lets it fade out naturally.
+        attack: 0.005,
+        release: 1.5,
         onload: () => console.log("Sounds loaded!"),
         onerror: (e) => console.log("Error loading sound", e)
     }).toDestination();
