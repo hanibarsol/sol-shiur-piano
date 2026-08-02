@@ -434,12 +434,15 @@
     let songHit = false;
     const keyByNote = {};
 
-    const characterImages = ["דו.png", "רה.png", "מי.png", "פה.png", "סול.png", "לה.png", "סי.png", "דו.png", "רה.png", "מי.png", "פה.png", "סול.png", "לה.png", "סי.png"];
+    const characterImages = ["דו.png", "רה.png", "מי.png", "פה.png", "סול.png", "לה.png", "סי.png"];
 
     // Map every note to its real recorded sample (24 files exist in sounds/,
     // the previous version only wired up 4 of them and let Tone.js pitch-shift the rest).
     const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-    const octaves = [3, 4];
+    // Single octave: this song doesn't need the range of a second one, and
+    // one octave keeps the correct-key feedback unambiguous (matches the
+    // pattern used for the other calibrated lessons).
+    const octaves = [4];
 
     function noteToFile(note, octave) {
         const letter = note[0].toLowerCase();
@@ -686,10 +689,9 @@
         synthActive.delete(key);
     }
 
-    // Two octaves, 24 keys — the drum kit (12 sounds) repeats for the
-    // second octave, in key order (C, C#, D, D#, E, F, F#, G, G#, A, A#, B).
-    const drumKitOctave = ['kick', 'closedhat', 'snare', 'openhat', 'tom-low', 'tom-mid', 'tom-hi', 'clap', 'rim', 'shaker', 'conga', 'crash'];
-    const drumKit = drumKitOctave.concat(drumKitOctave);
+    // Single octave, 12 keys — a fixed drum-kit layout for "תופים" mode,
+    // in key order (C, C#, D, D#, E, F, F#, G, G#, A, A#, B).
+    const drumKit = ['kick', 'closedhat', 'snare', 'openhat', 'tom-low', 'tom-mid', 'tom-hi', 'clap', 'rim', 'shaker', 'conga', 'crash'];
     let whiteKeyIndex = 0;
     let keyIndex = 0;
 
@@ -774,15 +776,15 @@
         });
     });
 
-    // Responsive key sizing: fit 14 white keys (2 octaves) to the width left
-    // over after the volume knob and cabinet chrome. Width has no low cap —
-    // on a big screen the piano is meant to look like a real, prominent
-    // instrument, not a small widget lost in empty space. Key height is
-    // derived from key width (not a fixed vh) so proportions stay realistic
-    // at any size, and the whole cabinet is capped by available vertical
-    // space so it never crowds the video out on a short window.
+    // Responsive key sizing: fit 7 white keys to the width left over after
+    // the volume knob and cabinet chrome. Width has no low cap — on a big
+    // screen the piano is meant to look like a real, prominent instrument,
+    // not a small widget lost in empty space. Key height is derived from
+    // key width (not a fixed vh) so proportions stay realistic at any size,
+    // and the whole cabinet is capped by available vertical space so it
+    // never crowds the video out on a short window.
     function sizeKeys() {
-        const totalWhiteKeys = 14;
+        const totalWhiteKeys = 7;
         // Two 96px mirror columns (one holds the knob, one is empty so the
         // cabinet stays centered) + grid gaps + cabinet/keywell padding.
         const reserved = 96 * 2 + 16 * 2 + 40;
