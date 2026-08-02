@@ -222,7 +222,11 @@
             position: fixed;
             top: 8px;
             left: 8px;
-            z-index: 50;
+            /* Higher than #start-screen (100) — if that overlay ever fails to
+               dismiss (e.g. Tone.js/audio setup stalls), the calibration
+               buttons underneath must still be reachable, since calibration
+               only needs the video player, not the piano audio. */
+            z-index: 200;
             background: rgba(0,0,0,0.75);
             border-radius: 10px;
             padding: 8px;
