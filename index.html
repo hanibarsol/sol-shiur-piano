@@ -256,6 +256,20 @@
             direction: ltr;
             text-align: left;
         }
+        #calib-copy-box {
+            display: none;
+            touch-action: auto;
+            width: 100%;
+            box-sizing: border-box;
+            margin-top: 6px;
+            font-size: 12px;
+            direction: ltr;
+            text-align: left;
+            resize: none;
+            border-radius: 6px;
+            border: 1px solid #4caf50;
+            padding: 4px;
+        }
     </style>
 </head>
 <body>
@@ -302,6 +316,7 @@
         <button id="calib-clear">נקה הכל</button>
     </div>
     <button id="calib-copy" style="width:100%">העתק תוצאות</button>
+    <textarea id="calib-copy-box" readonly rows="3"></textarea>
     <div id="calib-list"></div>
 </div>
 
@@ -387,11 +402,23 @@
     });
     calibUndoBtn.addEventListener('click', () => { calibMarks.pop(); renderCalibList(); });
     calibClearBtn.addEventListener('click', () => { calibMarks.length = 0; renderCalibList(); });
+    const calibCopyBox = document.getElementById('calib-copy-box');
     calibCopyBtn.addEventListener('click', () => {
         const text = calibMarks.map(t => t.toFixed(2)).join(', ');
-        navigator.clipboard.writeText(text).catch(() => {});
-        calibCopyBtn.textContent = 'הועתק!';
-        setTimeout(() => { calibCopyBtn.textContent = 'העתק תוצאות'; }, 1200);
+        // The Clipboard API silently fails in some mobile/embedded browser
+        // contexts with no visible error — always show the text in a
+        // selectable box too, so copying works no matter what, by hand if
+        // the automatic copy didn't actually go through.
+        calibCopyBox.value = text;
+        calibCopyBox.style.display = 'block';
+        calibCopyBox.focus();
+        calibCopyBox.select();
+        navigator.clipboard.writeText(text).then(() => {
+            calibCopyBtn.textContent = 'הועתק! (או בחרי ידנית למטה)';
+        }).catch(() => {
+            calibCopyBtn.textContent = 'בחרי את הטקסט למטה ותעתיקי ידנית';
+        });
+        setTimeout(() => { calibCopyBtn.textContent = 'העתק תוצאות'; }, 2500);
     });
 
     // No calibrated song for this page yet — leave empty so the due/correct
