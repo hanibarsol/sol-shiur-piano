@@ -425,12 +425,12 @@
         setTimeout(() => { calibCopyBtn.textContent = 'העתק תוצאות'; }, 2500);
     });
 
-    // No calibrated song for this page yet — leave empty so the due/correct
-    // feedback logic below simply never triggers, without disabling it.
-    const solfegeToLetter = { do: 'C', re: 'D', mi: 'E', fa: 'F', sol: 'G', la: 'A', si: 'B' };
-    const songTimes = [];
-    const songSyllables = [];
-    const songNotes = songTimes.map((t, i) => ({ time: t, note: solfegeToLetter[songSyllables[i]] + '4' }));
+    // Note-timing feedback for "לכובע שלי 3 פינות", built from Hani's
+    // calibration marks. A#4 ("לה#") is the black key just above La — shown
+    // in the video as the La character with a black circle over it.
+    const songTimes = [3.35, 4.36, 5.30, 6.13, 7.13, 8.87, 9.88, 11.17, 12.50, 14.08, 15.06, 16.97, 17.97, 18.80, 19.62, 21.11, 22.03, 23.07, 24.08, 25.47, 26.44, 27.77, 28.81, 29.72, 30.99, 31.96, 33.51, 34.65, 36.40, 38.29, 39.25, 40.08, 41.25, 42.38, 43.39, 44.50, 45.57];
+    const songLetters = ['C', 'F', 'F', 'G', 'A', 'C', 'F', 'A', 'G', 'C', 'G', 'A', 'A#', 'A', 'G', 'C', 'D', 'E', 'F', 'C', 'F', 'G', 'A', 'A', 'C', 'F', 'A', 'G', 'G', 'A', 'A#', 'A', 'G', 'C', 'D', 'E', 'F'];
+    const songNotes = songTimes.map((t, i) => ({ time: t, note: songLetters[i] + '4' }));
 
     const NOTE_LEAD = 0.6;
     const NOTE_TAIL = 0.45;
@@ -831,8 +831,6 @@
     // Polls playback time, lights up the currently-due key (green outline,
     // matching the video's own green-line cue), and advances past notes that
     // were missed once their window closes — no penalty, it just moves on.
-    // A no-op today since songNotes is empty, ready for whenever this page
-    // gets a calibrated song too.
     setInterval(() => {
         if (!player || !player.getCurrentTime || songIdx >= songNotes.length) return;
         const t = player.getCurrentTime();
