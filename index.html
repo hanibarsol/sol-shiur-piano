@@ -243,6 +243,14 @@
             width: calc(var(--white-w) * 0.6);
             height: calc(var(--white-w) * 0.6);
             transform: translateX(-50%);
+            pointer-events: none;
+        }
+        /* The circular clip lives on an inner wrapper (not .falling-note
+           itself) so a sharp-note badge can sit at the outer element's
+           corner without being cut off by the avatar's own round mask. */
+        .falling-note-avatar {
+            width: 100%;
+            height: 100%;
             border-radius: 50%;
             overflow: hidden;
             border: 2px solid rgba(0,0,0,0.85);
@@ -250,13 +258,30 @@
                grounding drop shadow. */
             box-shadow: 0 2px 6px rgba(0,0,0,0.5), 0 0 10px 2px rgba(255,255,255,0.65);
             background: #333;
-            pointer-events: none;
         }
         /* object-fit: contain (not cover) — cover was cropping into a
            mostly-transparent margin around the character at random,
            different amounts every time, which read as "unstable." contain
            always shows the whole figure, consistently framed. */
-        .falling-note img { width: 100%; height: 100%; object-fit: contain; display: block; }
+        .falling-note-avatar img { width: 100%; height: 100%; object-fit: contain; display: block; }
+        /* Sharps don't have their own character in the do-re-mi-fa-sol-la-si
+           cast, so a sharp note reuses its neighboring natural's character
+           (e.g. A# reuses לה) with this small black-circle badge marking it
+           as "the black key version" — on both the physical key and the
+           falling tile. */
+        .sharp-badge {
+            position: absolute;
+            bottom: -2px;
+            right: -2px;
+            width: 42%;
+            aspect-ratio: 1;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 30%, #555, #000 80%);
+            border: 2px solid #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.6);
+            pointer-events: none;
+            z-index: 2;
+        }
         /* Correct-in-time press: pop like a bubble — a quick anticipatory
            squash, then a fast burst-and-vanish — instead of a plain fade. */
         @keyframes bubble-pop {
@@ -746,6 +771,12 @@
     const keyByNote = {};
 
     const characterImages = ["דו.png", "רה.png", "מי.png", "פה.png", "סול.png", "לה.png", "סי.png"];
+    // Same do-re-mi-fa-sol-la-si order the keys and characterImages are
+    // built in. Declared here (not just down by the falling-note lane)
+    // because the key-building loop below also needs it, to find a sharp
+    // key's neighboring natural for the "character + black-circle badge"
+    // treatment.
+    const noteLetterOrder = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
 
     // Map every note to its real recorded sample (24 files exist in sounds/,
     // the previous version only wired up 4 of them and let Tone.js pitch-shift the rest).
@@ -1032,6 +1063,21 @@
                 img.className = 'character-img';
                 key.appendChild(img);
                 whiteKeyIndex++;
+            } else if (songNoteTotals[fullNote]) {
+                // A sharp actually used by this song (e.g. A# in "לכובע שלי
+                // 3 פינות") — show its neighboring natural's character plus
+                // the black-circle badge, so the key isn't just a bare
+                // unlabeled strip.
+                const baseIdx = noteLetterOrder.indexOf(note[0]);
+                if (baseIdx !== -1) {
+                    const img = document.createElement('img');
+                    img.src = characterImages[baseIdx] || "";
+                    img.className = 'character-img';
+                    key.appendChild(img);
+                    const badge = document.createElement('div');
+                    badge.className = 'sharp-badge';
+                    key.appendChild(badge);
+                }
             }
 
             const playNote = () => {
@@ -1104,8 +1150,9 @@
 
     // --- Falling-note lane (pilot): one column per white key, in the same
     // do-re-mi-fa-sol-la-si order the keys themselves are built in, so a
-    // note's column always lines up with the key it belongs to.
-    const noteLetterOrder = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+    // note's column always lines up with the key it belongs to. A sharp
+    // note (e.g. A#) falls in its neighboring natural's column too, marked
+    // with the badge added below.
     const laneCols = {};
     noteLetterOrder.forEach((letter) => {
         const col = document.createElement('div');
@@ -1151,9 +1198,17 @@
                     // comes from timing, not from being nudged sideways).
                     tile = document.createElement('div');
                     tile.className = 'falling-note';
+                    const avatar = document.createElement('div');
+                    avatar.className = 'falling-note-avatar';
                     const img = document.createElement('img');
                     img.src = characterImages[noteLetterOrder.indexOf(letter)] || '';
-                    tile.appendChild(img);
+                    avatar.appendChild(img);
+                    tile.appendChild(avatar);
+                    if (n.note.includes('#')) {
+                        const badge = document.createElement('div');
+                        badge.className = 'sharp-badge';
+                        tile.appendChild(badge);
+                    }
                     col.appendChild(tile);
                     activeTiles.set(i, tile);
                 }
