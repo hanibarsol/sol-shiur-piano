@@ -282,6 +282,21 @@
             pointer-events: none;
             z-index: 2;
         }
+        /* Ties the falling A# tile to its physical black key: both glow the
+           same teal LED, and the tile itself leans right onto the boundary
+           with the next column, toward where the black key actually sits
+           (a black key sits centered between its two neighboring white
+           keys, not under either one). */
+        .key.sharp-glow {
+            box-shadow: 0 0 10px 3px rgba(111,214,201,0.65), inset 0 0 0 2px rgba(111,214,201,0.55);
+        }
+        .falling-note.sharp {
+            left: 100%;
+        }
+        .falling-note.sharp .falling-note-avatar {
+            border-color: var(--teal);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.5), 0 0 12px 4px rgba(111,214,201,0.85);
+        }
         /* Correct-in-time press: pop like a bubble — a quick anticipatory
            squash, then a fast burst-and-vanish — instead of a plain fade. */
         @keyframes bubble-pop {
@@ -1077,6 +1092,7 @@
                     const badge = document.createElement('div');
                     badge.className = 'sharp-badge';
                     key.appendChild(badge);
+                    key.classList.add('sharp-glow');
                 }
             }
 
@@ -1205,6 +1221,7 @@
                     avatar.appendChild(img);
                     tile.appendChild(avatar);
                     if (n.note.includes('#')) {
+                        tile.classList.add('sharp');
                         const badge = document.createElement('div');
                         badge.className = 'sharp-badge';
                         tile.appendChild(badge);
