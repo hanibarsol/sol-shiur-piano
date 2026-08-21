@@ -805,6 +805,13 @@
             const note = document.createElement('div');
             note.className = 'staff-note';
             if (i < soloIdx) note.classList.add('done');
+            // לדיאז אין דמות משלו במשפחה של סול. הוא לובש את הדמות של
+            // השכן הלבן ומקבל עיגול שחור בפינה - אותו סימן בדיוק שכבר
+            // קיים על הקליד השחור ועל התו הנופל בתרגול הרגיל. בלעדיו
+            // העיגול של לה דיאז נראה זהה לעיגול של לה, והילד מנגן לה
+            // רגילה בלי לדעת שטעה.
+            const isSharp = n.note.includes('#');
+            if (isSharp) note.classList.add('sharp');
             note.style.left = (spacing * 0.6 + i * spacing) + 'px';
             note.style.top = (wrapH / 2) + 'px';
             note.style.width = d + 'px';
@@ -823,6 +830,14 @@
             avatar.appendChild(water);
             staffWaterEls.push(water);
             note.appendChild(avatar);
+            // התג יושב על המעטפת החיצונית ולא על העיגול עצמו, כי לעיגול
+            // יש חיתוך עגול שהיה קוצץ אותו. pointer-events: none עליו,
+            // כדי שלא יגנוב את המגע מהדמות שמנגנים ממנה.
+            if (isSharp) {
+                const badge = document.createElement('div');
+                badge.className = 'sharp-badge';
+                note.appendChild(badge);
+            }
             const ring = document.createElement('div');
             ring.className = 'hold-ring';
             note.appendChild(ring);
