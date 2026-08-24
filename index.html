@@ -1017,7 +1017,11 @@
     function startHold(idx, token) {
         if (soloHold) return;
         drainSeq++;
-        soloHold = { idx: idx, token: token, full: false, t0: Date.now(), need: songNotes[idx].dur * 1000 };
+        // Three quarters of the note, not all of it. Hani asked for the holds to be shorter:
+        // a four-year-old keeping a finger down for two full seconds runs out of patience
+        // before the water fills. The note itself is unchanged — this is only how long the
+        // child has to keep holding for it to count as full.
+        soloHold = { idx: idx, token: token, full: false, t0: Date.now(), need: songNotes[idx].dur * HOLD_FRACTION * 1000 };
         const el = staffNoteEls[idx];
         if (el) el.classList.add('holding');
         holdTick();
@@ -1297,10 +1301,15 @@
     const DUR_CAP  = 2.0;   // תקרה: מרווח ארוך הוא תו ועוד שתיקה
     const LAST_DUR = 2.0;   // לתו האחרון אין מרווח אחריו
     const HOLD_TOL = 0.90;  // 90% מהאורך כבר נחשב מלא
+    const HOLD_FRACTION = 0.75; // כמה מאורך התו צריך להחזיק בפועל
+    // תו 19 (פה) — הני ביקשה שיהיה מוחזק כמו האחרים. המרווח שלו 1.39,
+    // קצת מתחת לסף, אבל בשיר הוא נשמע ארוך והילד מצפה להחזיק אותו.
+    const ALSO_HOLD = [19];
+
     songNotes.forEach((n, i) => {
         const gap = i < songNotes.length - 1 ? songNotes[i + 1].time - n.time : LAST_DUR;
         n.dur = Math.min(gap, DUR_CAP);
-        n.hold = n.dur >= HOLD_MIN;
+        n.hold = n.dur >= HOLD_MIN || ALSO_HOLD.indexOf(i + 1) !== -1;
     });
 
     // Per-key "fill" progress (idea: each correct-in-time press fills up
