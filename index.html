@@ -1979,69 +1979,38 @@
 </script>
 
 <script>
-/* sol-home-back: the home button leaves the lesson and returns the child into Smoove.
+/* sol-home-back: the home button. It asks nothing and guesses nothing.
 
-   The Smoove address written into this button carries a portal id, and Smoove issues a different
-   one per account - the id here belongs to Hani. It worked for her and answered every other
-   customer with a login screen in the middle of a lesson. Her tester proved it on 2026-08-26:
-   signed in as Hani everything worked, signed in as herself the button broke. So the address is
-   now only the last resort, and the button navigates by other means.
+   Try to close the tab. If the tab is still here a moment later, go to the portal.
 
-   How a child gets here: Smoove's menu, then the lesson's own page, then a linked image on that
-   page - and Smoove opens that image in a NEW TAB. Measured: the back arrow is greyed out and
-   history.length is 1. The page behind is exactly where the child wants to return to, because it
-   carries Smoove's own menu.
+   Everything more clever than that has failed here, and each failure taught the same lesson: this
+   page cannot tell how the child arrived. Smoove routes every click through click.smoove.io, which
+   strips the referrer completely, and the tracker leaves an entry in the history as well - so
+   "where did you come from" and "is this a fresh tab" both answer wrongly. A version that counted
+   history entries sent Hani's own phone back into a games site her children had used; a version
+   that checked history.length sent her tester one lesson back and then to a login screen. Measured
+   on her devices, 28.8.2026.
 
-   So a tab that was BORN on a lesson closes itself, and the child is back on that page, signed in.
-   The flag matters: after one press of the forward arrow the tab holds two entries, and an earlier
-   version read that as "there is history to walk back through" and tried to step back past the
-   first lesson - where nothing exists. The tab did not move, the stale address ran, and the child
-   met a login screen. Hani's tester found exactly that: fine until the forward arrow, thrown out
-   after it.
+   Closing works because Smoove opens the lesson in a new tab and that tab is ours to close - it
+   returns the child to the Smoove page they left, still signed in, however many lessons they moved
+   through with the arrows first.
 
-   A tab that arrived with real history behind it - a lesson opened in the same tab - walks back
-   instead, over the whole run at once, using the depth each lesson counts for itself. */
+   The fallback is the short courses link from the course settings: the one Smoove address measured
+   to work for somebody who is not Hani - her tester opened it signed in, without a password. It
+   lands a step further out than the lesson's own page, and that is the price of never landing
+   somewhere else entirely. */
 (function () {
-  var DEPTH = "sol-nav-depth";
-  var BORN  = "sol-nav-born";
-  var depth = 0, born = false;
-
-  try {
-    var sameSite = (document.referrer || "").indexOf(location.origin + "/") === 0;
-    if (sameSite) {
-      depth = (parseInt(sessionStorage.getItem(DEPTH), 10) || 0) + 1;
-      born  = sessionStorage.getItem(BORN) === "1";
-    } else {
-      depth = 0;
-      born  = window.history.length <= 1;
-      sessionStorage.setItem(BORN, born ? "1" : "0");
-    }
-    sessionStorage.setItem(DEPTH, String(depth));
-  } catch (e) {
-    depth = 0;
-    born  = window.history.length <= 1;
-  }
-
-  var home = document.querySelector('a[href*="portal.smoove.io"][href*="Category"]');
+  var PORTAL = "https://portal.smoove.io/dfb7";
+  var home = document.querySelector('a[href*="portal.smoove.io"][href*="Category"]')
+          || document.querySelector('a[href*="portal.smoove.io"]');
   if (!home) return;
 
   home.addEventListener("click", function (e) {
     e.preventDefault();
-    var wasAt = location.href;
-    var fallback = function () {
-      if (location.href !== wasAt) return;
-      try { window.top.location.href = home.href; } catch (err) { location.href = home.href; }
-    };
-
-    if (born) {
-      try { window.close(); } catch (err) {}
-      setTimeout(fallback, 500);
-      return;
-    }
-
-    try { sessionStorage.setItem(DEPTH, "0"); } catch (err) {}
-    window.history.go(-(depth + 1));
-    setTimeout(fallback, 600);
+    try { window.close(); } catch (err) {}
+    window.setTimeout(function () {
+      try { window.top.location.href = PORTAL; } catch (err) { location.href = PORTAL; }
+    }, 350);
   });
 })();
 </script>
